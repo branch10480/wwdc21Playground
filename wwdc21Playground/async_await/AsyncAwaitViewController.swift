@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import MultipeerConnectivity
 
 class AsyncAwaitViewController: UIViewController {
   
@@ -44,5 +45,28 @@ extension UIImage {
       let size = CGSize(width: 100, height: 100)
       return await byPreparingThumbnail(ofSize: size)
     }
+  }
+}
+
+fileprivate class ViewController: UIViewController {
+  
+  private var activeConfiguration: CheckedContinuation<[Any], Error>?
+  
+  func sharedPostsFromPeer() async throws -> [Any] {
+    try await withCheckedThrowingContinuation({ continuation in
+      self.activeConfiguration = continuation
+    })
+  }
+  
+  // MARK: - Demo delegate methods
+
+  func demo(received posts: [Any]) {
+    self.activeConfiguration?.resume(returning: posts)
+    self.activeConfiguration = nil
+  }
+  
+  func demo(hadError error: Error) {
+    self.activeConfiguration?.resume(throwing: error)
+    self.activeConfiguration = nil
   }
 }
