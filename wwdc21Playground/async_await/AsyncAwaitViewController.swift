@@ -8,11 +8,41 @@
 import UIKit
 
 class AsyncAwaitViewController: UIViewController {
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
+  
+  @IBOutlet weak var imageView: UIImageView!
+  
+  enum FetchError: Error {
+    case badID
+    case badImage
+  }
+  
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    
+    async {
+      imageView.image = try? await fetchThumbnail(for: "https://avatars.githubusercontent.com/u/5299528?v=4")
     }
+  }
 
+  func fetchThumbnail(for url: String) async throws -> UIImage {
+    let request = URLRequest(url: URL(string: url)!)
+    let (data, response) = try await URLSession.shared.data(for: request)
+    guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+      throw FetchError.badID
+    }
+    let maybeImage = UIImage(data: data)
+    guard let thumbnail = await maybeImage?.thumbnail else {
+      throw FetchError.badImage
+    }
+    return thumbnail
+  }
+}
+
+extension UIImage {
+  var thumbnail: UIImage? {
+    get async {
+      let size = CGSize(width: 100, height: 100)
+      return await byPreparingThumbnail(ofSize: size)
+    }
+  }
 }
